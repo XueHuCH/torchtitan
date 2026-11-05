@@ -48,6 +48,7 @@ from torchtitan.models.llama3.model import Llama3Model
 from torchtitan.observability.metrics import MetricsProcessor, TensorBoardLogger
 from torchtitan.observability.profiler import Profiler
 from torchtitan.quantization.nvfp4 import nvfp4_bf16_tail_fqns
+from torchtitan.tools.utils import device_type
 from torchtitan.trainer import Trainer
 
 from torchtitan_recipes.data import c4_document_capacity
@@ -59,7 +60,7 @@ def llama3_debugmodel(
     seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
     *,
     parallelism: ParallelismConfig | None = None,
-    attn_backend: str = "varlen",
+    attn_backend: str = "flex" if device_type == "xpu" else "varlen",
 ) -> Trainer.Config:
     if parallelism is None:
         parallelism = ParallelismConfig(pipeline_parallel_schedule="Interleaved1F1B")

@@ -62,6 +62,7 @@ from torchtitan.models.common.moe.sharding import (
     router_sharding_config,
 )
 from torchtitan.models.common.param_init import depth_scaled_std
+from torchtitan.tools.utils import device_type
 
 from .attention import DeepSeekMLAAttention
 from .model import DeepSeekV3Model, DeepSeekV3TransformerBlock
@@ -825,7 +826,7 @@ def build_model_config(
     *,
     parallelism: ParallelismConfig,
     seq_len: int | None = None,
-    attn_backend: str = "varlen",
+    attn_backend: str = "flex" if device_type == "xpu" else "varlen",
     converters: list[ModelConfigConverter.Config] | None = None,
     num_mtp_layers: int = 0,
 ) -> DeepSeekV3Model.Config:

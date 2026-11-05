@@ -36,6 +36,7 @@ from torchtitan.models.deepseek_v3 import build_model_config
 from torchtitan.models.deepseek_v3.mtp import MTPCrossEntropyLoss
 from torchtitan.observability.metrics import MetricsProcessor
 from torchtitan.quantization.nvfp4 import nvfp4_bf16_tail_fqns, nvfp4_ffn_submodules
+from torchtitan.tools.utils import device_type
 from torchtitan.trainer import Trainer
 
 from torchtitan_recipes.data import c4_document_capacity
@@ -51,7 +52,7 @@ def deepseek_v3_debugmodel(
     seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
     *,
     parallelism: ParallelismConfig | None = None,
-    attn_backend: str = "varlen",
+    attn_backend: str = "flex" if device_type == "xpu" else "varlen",
 ) -> Trainer.Config:
     if parallelism is None:
         parallelism = ParallelismConfig()
@@ -107,7 +108,7 @@ def deepseek_v3_debugmodel_mtp(
     seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
     *,
     parallelism: ParallelismConfig | None = None,
-    attn_backend: str = "varlen",
+    attn_backend: str = "flex" if device_type == "xpu" else "varlen",
 ) -> Trainer.Config:
     num_mtp_layers = 1
     config = deepseek_v3_debugmodel(

@@ -38,6 +38,7 @@ from torchtitan.models.common.decoder_sharding import (
     token_embedding_sharding_config,
 )
 from torchtitan.models.common.param_init import depth_scaled_std, skip_param_init
+from torchtitan.tools.utils import device_type
 
 from .model import Llama3Model, Llama3TransformerBlock
 
@@ -477,7 +478,7 @@ def build_model_config(
     *,
     parallelism: ParallelismConfig,
     seq_len: int | None = None,
-    attn_backend: str = "varlen",
+    attn_backend: str = "flex" if device_type == "xpu" else "varlen",
     converters: list[ModelConfigConverter.Config] | None = None,
 ) -> Llama3Model.Config:
     get_config, max_context_len = MODEL_FLAVORS[flavor]
