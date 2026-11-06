@@ -60,6 +60,7 @@ def llama3_debugmodel(
     seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
     *,
     parallelism: ParallelismConfig | None = None,
+    # Varlen uses aten::_flash_attention_forward, which has no XPU kernel.
     attn_backend: str = "flex" if device_type == "xpu" else "varlen",
 ) -> Trainer.Config:
     if parallelism is None:

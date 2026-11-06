@@ -826,6 +826,7 @@ def build_model_config(
     *,
     parallelism: ParallelismConfig,
     seq_len: int | None = None,
+    # Varlen uses aten::_flash_attention_forward, which has no XPU kernel.
     attn_backend: str = "flex" if device_type == "xpu" else "varlen",
     converters: list[ModelConfigConverter.Config] | None = None,
     num_mtp_layers: int = 0,
