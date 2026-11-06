@@ -11,6 +11,7 @@ fields set at config creation time.
 """
 
 import dataclasses
+import logging
 from collections.abc import Callable
 from typing import Literal
 
@@ -69,6 +70,8 @@ from torchtitan.models.common.nn_modules import RMSNorm
 from torchtitan.models.common.rope import RoPE
 
 
+logger = logging.getLogger(__name__)
+
 DEFAULT_DEBUG_MODEL_SEQ_LEN = 2048
 
 
@@ -110,6 +113,13 @@ def get_attention_config(
             block_size=(256, 128), kernel_options={"BACKEND": "FLASH"}
         )
     elif backend == "varlen":
+        from torchtitan.tools.utils import device_type, has_varlen_attention
+
+        if not has_varlen_attention():
+            logger.warning(
+                f"varlen attention unavailable on '{device_type}'; falling back to flex."
+            )
+            return FlexInnerAttention.Config()
         return VarlenInnerAttention.Config()
     elif backend == "sdpa":
         raise ValueError(

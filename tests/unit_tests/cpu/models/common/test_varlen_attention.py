@@ -28,6 +28,7 @@ from torchtitan.distributed.parallelism_context import MeshAxisName
 from torchtitan.distributed.spmd_types import _per_axis_types
 from torchtitan.models.common.attention import (
     create_varlen_metadata_for_document,
+    FlexInnerAttention,
     GQAttention,
     QKVLinear,
     SlidingWindowFlexInnerAttention,
@@ -39,9 +40,31 @@ from torchtitan.models.common.attention.cp_attention import (
     UlyssesSlidingWindowVarlenInnerAttention,
     UlyssesVarlenInnerAttention,
 )
+from torchtitan.models.common.config_utils import get_attention_config
 from torchtitan.models.common.decoder import Decoder
 from torchtitan.models.common.linear import Linear
 from torchtitan.models.common.rope import ComplexRoPE
+
+
+def test_get_attention_config_varlen_without_kernel(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr("torchtitan.tools.utils.device_type", "xpu")
+    monkeypatch.setattr("torchtitan.tools.utils.has_varlen_attention", lambda: False)
+
+    with caplog.at_level("WARNING", logger="torchtitan.models.common.config_utils"):
+        config = get_attention_config("varlen")
+
+    assert isinstance(config, FlexInnerAttention.Config)
+    assert "varlen attention unavailable on 'xpu'; falling back to flex." in caplog.text
+
+
+def test_get_attention_config_varlen_with_kernel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("torchtitan.tools.utils.has_varlen_attention", lambda: True)
+
+    assert isinstance(get_attention_config("varlen"), VarlenInnerAttention.Config)
 
 
 @pytest.mark.parametrize(

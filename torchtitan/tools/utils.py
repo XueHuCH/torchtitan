@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import contextlib
+import functools
 import importlib.util
 import logging
 import os
@@ -78,6 +79,20 @@ def get_device_info() -> tuple[str, ModuleType]:
 
 
 device_type, device_module = get_device_info()
+
+
+@functools.cache
+def has_varlen_attention() -> bool:
+    """Return whether the current host should retain Varlen attention."""
+    # Keep the existing CUDA/ROCm and CPU-only config behavior.
+    if device_type == "cuda":
+        return True
+    try:
+        return torch._C._dispatch_has_kernel_for_dispatch_key(
+            "aten::_flash_attention_forward", device_type.upper()
+        )
+    except RuntimeError:
+        return False
 
 
 def get_local_device() -> torch.device:

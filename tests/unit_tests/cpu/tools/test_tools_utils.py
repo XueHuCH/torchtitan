@@ -4,13 +4,18 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
+from collections.abc import Iterator
 from unittest.mock import Mock
 
 import pytest
 import torch
 
 from torchtitan.tools.garbage_collector import GarbageCollector
-from torchtitan.tools.utils import get_cuda_flash_attention_impl, get_local_device
+from torchtitan.tools.utils import (
+    get_cuda_flash_attention_impl,
+    get_local_device,
+    has_varlen_attention,
+)
 
 
 class _FakeDeviceModule:
@@ -19,6 +24,52 @@ class _FakeDeviceModule:
 
     def device_count(self) -> int:
         return self.num_devices
+
+
+@pytest.fixture
+def reset_varlen_attention_cache() -> Iterator[None]:
+    has_varlen_attention.cache_clear()
+    yield
+    has_varlen_attention.cache_clear()
+
+
+def test_has_varlen_attention_on_cuda(
+    monkeypatch: pytest.MonkeyPatch, reset_varlen_attention_cache: None
+) -> None:
+    dispatch_probe = Mock()
+    monkeypatch.setattr("torchtitan.tools.utils.device_type", "cuda")
+    monkeypatch.setattr(
+        torch._C, "_dispatch_has_kernel_for_dispatch_key", dispatch_probe
+    )
+
+    assert has_varlen_attention()
+    dispatch_probe.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("probe_result", "expected"),
+    [
+        (True, True),
+        (False, False),
+        (RuntimeError("unknown dispatch key"), False),
+    ],
+)
+def test_has_varlen_attention_on_xpu(
+    monkeypatch: pytest.MonkeyPatch,
+    reset_varlen_attention_cache: None,
+    probe_result: bool | RuntimeError,
+    expected: bool,
+) -> None:
+    dispatch_probe = Mock(return_value=probe_result)
+    if isinstance(probe_result, RuntimeError):
+        dispatch_probe.side_effect = probe_result
+    monkeypatch.setattr("torchtitan.tools.utils.device_type", "xpu")
+    monkeypatch.setattr(
+        torch._C, "_dispatch_has_kernel_for_dispatch_key", dispatch_probe
+    )
+
+    assert has_varlen_attention() is expected
+    dispatch_probe.assert_called_once_with("aten::_flash_attention_forward", "XPU")
 
 
 def test_gc_debug_collects_once_per_step(monkeypatch: pytest.MonkeyPatch) -> None:
