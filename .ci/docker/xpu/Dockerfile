@@ -26,6 +26,12 @@ RUN /opt/conda/bin/conda create -p "/opt/conda/envs/py_${PYTHON_VERSION}" -y "py
     && "/opt/conda/envs/py_${PYTHON_VERSION}/bin/python" -m pip install --no-cache-dir \
         -r /tmp/requirements.txt \
         -r /tmp/requirements-dev.txt \
+    # The non-recursive chown in this image build means cache entries the
+    # base image's own py_3.11 setup left under /opt/conda/pkgs (owned by a
+    # uid jenkins no longer maps to) can't be removed; a 58GB recursive
+    # chown to let clean fully succeed made image export take 65+ min and
+    # tripped containerd export bugs, so this exit code is expected, not a
+    # swallowed real failure.
     && { /opt/conda/bin/conda clean -ya || true; } \
     && rm /tmp/requirements.txt /tmp/requirements-dev.txt
 
