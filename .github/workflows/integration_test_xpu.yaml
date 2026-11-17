@@ -1,8 +1,8 @@
 name: Integration Tests (XPU)
-# Mirrors integration_test_rocm.yaml's jobs: XPU runs its own workflow rather
-# than being folded into integration_test.yaml, because `uses:` is not
-# templatable and each gpu-arch's job needs its own trigger/concurrency
-# group. The test body is shared as a script instead.
+# XPU runs its own workflow rather than being folded into
+# integration_test.yaml, because `uses:` is not templatable and each
+# gpu-arch's job needs its own trigger/concurrency group. The test body is
+# shared as a script instead.
 #
 # Trigger differs from ROCm's (push + ciflow/rocm/* tag): a path-scoped
 # pull_request lets pre-merge validation on a branch inside pytorch/torchtitan
